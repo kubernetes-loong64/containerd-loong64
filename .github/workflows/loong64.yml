@@ -66,6 +66,7 @@ jobs:
         env:
           GOOS: linux
           GOARCH: loong64
+          CGO_ENABLED: 0
         run: make
       - name: Print binary SHA-256 checksums
         working-directory: containerd
