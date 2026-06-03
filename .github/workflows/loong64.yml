@@ -1,0 +1,81 @@
+name: loong64
+on:
+  push:
+    branches:
+      - loong64-*
+    tags:
+      - release-loong64-*
+  pull_request:
+    branches:
+      - loong64-*
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: debian:13
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Print branch name
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "${{ github.base_ref }} (PR target)"
+          else
+            echo ${{ github.ref_name }}
+          fi
+      - name: Extract containerd branch
+        id: extract
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            REF=${{ github.base_ref }}
+          else
+            REF=${{ github.ref_name }}
+          fi
+          echo "REF=$REF"
+          RAW_VERSION=$(echo $REF | awk -F'loong64-' '{print $2}')
+          echo "RAW_VERSION=$RAW_VERSION"
+          CONTAINERD_BRANCH=$(echo $RAW_VERSION | awk -F'+' '{print $1}')
+          echo "CONTAINERD_BRANCH=$CONTAINERD_BRANCH"
+          echo "CONTAINERD_BRANCH=$CONTAINERD_BRANCH" >> ${GITHUB_ENV}
+          if echo "$RAW_VERSION" | grep -qE '[+].*(alpha|beta|rc)'; then
+            IS_STABLE=false
+          else
+            IS_STABLE=true
+          fi
+          echo "IS_STABLE=$IS_STABLE"
+          echo "IS_STABLE=$IS_STABLE" >> ${GITHUB_OUTPUT}
+      - name: Clone containerd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: containerd/containerd
+          ref: ${{ env.CONTAINERD_BRANCH }}
+          path: containerd
+      - name: ls
+        run: ls -lah
+      - name: Install build tools
+        run: |
+          apt update
+          apt install -y git make golang file
+      #- name: Apply patches
+      #  working-directory: containerd
+      #  run: git apply ../*.patch
+      - name: Build containerd
+        working-directory: containerd
+        run: make
+      - name: Print binary SHA-256 checksums
+        working-directory: containerd
+        run: |
+          find bin -type f | xargs sha256sum
+      - name: Inspect binary file types
+        working-directory: containerd
+        run: |
+          echo "=== bin ==="
+          file bin/*
+      - name: Upload binaries
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: containerd-loong64-binaries
+          path: |
+            containerd/bin/*
