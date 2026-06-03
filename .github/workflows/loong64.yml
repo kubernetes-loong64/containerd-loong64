@@ -57,7 +57,7 @@ jobs:
       - name: Install build tools
         run: |
           apt update
-          apt install -y git make golang file gcc gcc-loongarch64-linux-gnu libc6-dev binutils-loongarch64-linux-gnu
+          apt install -y git make golang file gcc gcc-loongarch64-linux-gnu libc6-dev binutils-loongarch64-linux-gnu pkg-config
       #- name: Apply patches
       #  working-directory: containerd
       #  run: git apply ../*.patch
