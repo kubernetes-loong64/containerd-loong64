@@ -46,6 +46,10 @@ jobs:
           fi
           echo "IS_STABLE=$IS_STABLE"
           echo "IS_STABLE=$IS_STABLE" >> ${GITHUB_OUTPUT}
+      - name: Install build tools
+        run: |
+          apt update
+          apt install -y git make golang file
       - name: Clone containerd
         run: |
           git clone --branch ${{ env.CONTAINERD_BRANCH }} --depth 1 https://github.com/containerd/containerd.git runc
@@ -56,10 +60,6 @@ jobs:
         #   path: containerd
       - name: ls
         run: ls -lah
-      - name: Install build tools
-        run: |
-          apt update
-          apt install -y git make golang file
       #- name: Apply patches
       #  working-directory: containerd
       #  run: git apply ../*.patch
