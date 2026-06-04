@@ -52,7 +52,7 @@ jobs:
           apt install -y git make golang file
       - name: Clone containerd
         run: |
-          git clone --branch ${{ env.CONTAINERD_BRANCH }} --depth 1 https://github.com/containerd/containerd.git runc
+          git clone --branch ${{ env.CONTAINERD_BRANCH }} --depth 1 https://github.com/containerd/containerd.git containerd
         # uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         # with:
         #   repository: containerd/containerd
