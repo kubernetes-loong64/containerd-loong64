@@ -46,18 +46,15 @@ jobs:
           fi
           echo "IS_STABLE=$IS_STABLE"
           echo "IS_STABLE=$IS_STABLE" >> ${GITHUB_OUTPUT}
-      - name: Clone containerd
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          repository: containerd/containerd
-          ref: ${{ env.CONTAINERD_BRANCH }}
-          path: containerd
-      - name: ls
-        run: ls -lah
       - name: Install build tools
         run: |
           apt update
           apt install -y git make golang file
+      - name: Clone containerd
+        run: |
+          git clone --branch ${{ env.CONTAINERD_BRANCH }} --depth 1 https://github.com/containerd/containerd.git containerd
+      - name: ls
+        run: ls -lah
       #- name: Apply patches
       #  working-directory: containerd
       #  run: git apply ../*.patch
