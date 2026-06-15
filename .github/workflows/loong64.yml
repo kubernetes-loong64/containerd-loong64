@@ -122,10 +122,7 @@ jobs:
       - name: Print containerd version
         working-directory: containerd
         run: |
-          ./bin/ctr -v
-          ./bin/containerd -v
           ./bin/containerd-shim-runc-v2 -v
-          ./bin/containerd-stress -v
       - name: Generate man pages
         working-directory: containerd
         run: |
