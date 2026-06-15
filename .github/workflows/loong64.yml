@@ -179,6 +179,7 @@ jobs:
           find ~/rpmbuild
           cp artifacts/* ~/rpmbuild/BUILD/
           cp LICENSE ~/rpmbuild/BUILD/
+          cp systemd/containerd.service ~/rpmbuild/BUILD/
           cp containerd.spec ~/rpmbuild/SPECS/
           rpmbuild -ba --target ${{ env.ARCH }} ~/rpmbuild/SPECS/containerd.spec \
             --define "version ${{ env.VERSION }}" \
@@ -287,6 +288,7 @@ jobs:
           PKG_ROOT=$(mktemp -d)
           mkdir -p $PKG_ROOT/usr/bin
           mkdir -p $PKG_ROOT/usr/share/doc/containerd
+          mkdir -p $PKG_ROOT/usr/lib/systemd/system
           mkdir -p $PKG_ROOT/DEBIAN
 
           install -m 755 artifacts/ctr $PKG_ROOT/usr/bin/ctr
@@ -294,6 +296,36 @@ jobs:
           install -m 755 artifacts/containerd-shim-runc-v2 $PKG_ROOT/usr/bin/containerd-shim-runc-v2
           install -m 755 artifacts/containerd-stress $PKG_ROOT/usr/bin/containerd-stress
           install -m 644 LICENSE $PKG_ROOT/usr/share/doc/containerd/copyright
+
+          install -m 644 systemd/containerd.service $PKG_ROOT/usr/lib/systemd/system/containerd.service
+
+          cat > $PKG_ROOT/DEBIAN/postinst <<'PIEOS'
+          #!/bin/sh
+          set -e
+          if [ ! -f /etc/containerd/config.toml ]; then
+              mkdir -p /etc/containerd
+              containerd config default > /etc/containerd/config.toml
+          fi
+          echo "=== containerd installed ==="
+          echo "systemd service file: /usr/lib/systemd/system/containerd.service"
+          echo "Install service:"
+          echo "  sudo systemctl daemon-reload"
+          echo "  sudo systemctl enable containerd.service"
+          echo "  sudo systemctl start containerd.service"
+          PIEOS
+          chmod 755 $PKG_ROOT/DEBIAN/postinst
+
+          cat > $PKG_ROOT/DEBIAN/prerm <<'PRERMOS'
+          #!/bin/sh
+          set -e
+          echo "=== containerd uninstalling ==="
+          echo "Stop and remove service before uninstalling:"
+          echo "  sudo systemctl stop containerd.service 2>/dev/null || true"
+          echo "  sudo systemctl disable containerd.service 2>/dev/null || true"
+          echo "  sudo rm -f /etc/systemd/system/containerd.service"
+          echo "  sudo systemctl daemon-reload"
+          PRERMOS
+          chmod 755 $PKG_ROOT/DEBIAN/prerm
 
           cat > $PKG_ROOT/DEBIAN/control << EOF
           Package: containerd

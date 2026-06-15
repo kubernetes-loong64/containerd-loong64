@@ -30,11 +30,36 @@ install -m 755 containerd-stress %{buildroot}/usr/bin/containerd-stress
 mkdir -p %{buildroot}/usr/share/licenses/%{name}/
 install -m 644 LICENSE %{buildroot}/usr/share/licenses/%{name}/LICENSE
 
+mkdir -p %{buildroot}/usr/lib/systemd/system/
+install -m 644 containerd.service %{buildroot}/usr/lib/systemd/system/containerd.service
+
 %files
 %license /usr/share/licenses/%{name}/LICENSE
 /usr/bin/ctr
 /usr/bin/containerd
 /usr/bin/containerd-shim-runc-v2
 /usr/bin/containerd-stress
+/usr/lib/systemd/system/containerd.service
+
+%post
+if [ ! -f /etc/containerd/config.toml ]; then
+    mkdir -p /etc/containerd
+    containerd config default > /etc/containerd/config.toml
+fi
+
+echo "=== containerd installed ==="
+echo "systemd service file: /usr/lib/systemd/system/containerd.service"
+echo "Install service:"
+echo "  sudo systemctl daemon-reload"
+echo "  sudo systemctl enable containerd.service"
+echo "  sudo systemctl start containerd.service"
+
+%preun
+echo "=== containerd uninstalling ==="
+echo "Stop and remove service before uninstalling:"
+echo "  sudo systemctl stop containerd.service 2>/dev/null || true"
+echo "  sudo systemctl disable containerd.service 2>/dev/null || true"
+echo "  sudo rm -f /etc/systemd/system/containerd.service"
+echo "  sudo systemctl daemon-reload"
 
 %changelog
