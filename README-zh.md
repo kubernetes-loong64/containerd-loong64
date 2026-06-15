@@ -69,6 +69,10 @@ gpg --import /tmp/xxx
 gpg --verify <文件>.asc <文件>
 ```
 
+## 参考仓库
+
+- [src-anolis-os/docker](https://gitee.com/src-anolis-os/docker)
+
 ## 许可证
 
 [Apache License 2.0](LICENSE)

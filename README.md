@@ -72,6 +72,10 @@ signature from the release, then:
 gpg --verify <file>.asc <file>
 ```
 
+## Reference repositories
+
+- [src-anolis-os/docker](https://gitee.com/src-anolis-os/docker)
+
 ## License
 
 [Apache License 2.0](LICENSE)
