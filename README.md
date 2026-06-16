@@ -76,6 +76,13 @@ gpg --verify <file>.asc <file>
 
 - [src-anolis-os/docker](https://gitee.com/src-anolis-os/docker)
 
+## Documentation
+
+> Applies to: moby-loong64, tini-loong64, cli-loong64, runc-loong64, containerd-loong64
+
+- [Install containerd and docker binaries on LoongArch](https://xuxiaowei.io/t/754)
+- [Install containerd and docker RPM packages on LoongArch](https://xuxiaowei.io/t/811)
+
 ## License
 
 [Apache License 2.0](LICENSE)
