@@ -265,7 +265,7 @@ jobs:
       RAW_VERSION: ${{ needs.build.outputs.RAW_VERSION }}
       CONTAINERD_BRANCH: ${{ needs.build.outputs.CONTAINERD_BRANCH }}
       RELEASE: ${{ needs.build.outputs.RELEASE }}
-      ARCH: loongarch64
+      ARCH: loong64
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
