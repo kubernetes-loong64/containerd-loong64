@@ -488,3 +488,35 @@ jobs:
           make_latest: ${{ env.IS_STABLE == 'true' && 'legacy' || 'false' }}
           files: |
             loong64-artifacts/**
+
+  trigger-gitlab:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [ rpm-anolis, deb-debian, release ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      BASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}
+      ANOLIS_RPM_NAME: ${{ needs.rpm-anolis.outputs.ANOLIS_RPM_NAME }}
+      DEBIAN_DEB_NAME: ${{ needs.deb-debian.outputs.DEBIAN_DEB_NAME }}
+      GITLAB_API_URL: ${{ vars.GITLAB_API_URL || 'https://gitlab.xuxiaowei.com.cn' }}
+      GITLAB_PROJECT_ID: ${{ vars.GITLAB_PROJECT_ID || '590' }}
+      GITLAB_REF: ${{ vars.GITLAB_REF || 'sync' }}
+    steps:
+      - name: Trigger GitLab CI
+        env:
+          ANOLIS_RPM_URL: ${{ env.BASE_URL }}/${{ env.ANOLIS_RPM_NAME }}
+          DEBIAN_DEB_URL: ${{ env.BASE_URL }}/${{ env.DEBIAN_DEB_NAME }}
+        run: |
+          curl --request POST \
+            --header "PRIVATE-TOKEN: ${{ secrets.GITLAB_TRIGGER_TOKEN }}" \
+            --header "Content-Type: application/json" \
+            --data '{
+              "ref": "${{ env.GITLAB_REF }}",
+              "variables": [
+                {"key": "ANOLIS_RPM_URL", "value": "${{ env.ANOLIS_RPM_URL }}"},
+                {"key": "DEBIAN_DEB_URL", "value": "${{ env.DEBIAN_DEB_URL }}"}
+              ]
+            }' \
+            --url "${{ env.GITLAB_API_URL }}/api/v4/projects/${{ env.GITLAB_PROJECT_ID }}/pipeline"
+
