@@ -145,6 +145,7 @@ jobs:
     container: openanolis/anolisos:23
     outputs:
       ANOLIS_RPM_NAME: ${{ steps.rpm-file.outputs.ANOLIS_RPM_NAME }}
+      ANOLIS_VERSION: ${{ steps.extract-version.outputs.ANOLIS_VERSION }}
     permissions:
       contents: read
     env:
@@ -158,6 +159,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Extract version
+        id: extract-version
         run: |
           VERSION=$(echo $CONTAINERD_BRANCH | awk -F'v' '{print $2}')
           echo "VERSION=$VERSION"
@@ -165,6 +167,10 @@ jobs:
           DIST=$(rpm --eval '%{dist}')
           echo "DIST=$DIST"
           echo "DIST=$DIST" >> ${GITHUB_ENV}
+          ANOLIS_VERSION=$(cat /etc/anolis-release | awk '{print $4}' | cut -d'.' -f1)
+          echo "ANOLIS_VERSION=$ANOLIS_VERSION"
+          echo "ANOLIS_VERSION=$ANOLIS_VERSION" >> ${GITHUB_OUTPUT}
+          echo "ANOLIS_VERSION=$ANOLIS_VERSION" >> ${GITHUB_ENV}
       - name: Install build tools
         run: yum install -y rpm-build rpmdevtools rpm-sign
       - name: Download binaries
@@ -259,6 +265,7 @@ jobs:
     container: debian:13
     outputs:
       DEBIAN_DEB_NAME: ${{ steps.deb-file.outputs.DEBIAN_DEB_NAME }}
+      DEBIAN_VERSION_CODENAME: ${{ steps.extract-version.outputs.DEBIAN_VERSION_CODENAME }}
     permissions:
       contents: read
     env:
@@ -274,13 +281,18 @@ jobs:
           apt update
           apt install -y file
       - name: Extract version
+        id: extract-version
         run: |
           VERSION=$(echo $CONTAINERD_BRANCH | awk -F'v' '{print $2}')
           echo "VERSION=$VERSION"
           echo "VERSION=$VERSION" >> ${GITHUB_ENV}
-          DIST=$(sh -c '. /etc/os-release && echo "${ID}.${VERSION_ID}~${VERSION_CODENAME}"')
-          echo "DIST=$DIST"
-          echo "DIST=$DIST" >> ${GITHUB_ENV}
+          ID_VERSION_ID=$(sh -c '. /etc/os-release && echo "${ID}.${VERSION_ID}"')
+          echo "ID_VERSION_ID=$ID_VERSION_ID"
+          echo "ID_VERSION_ID=$ID_VERSION_ID" >> ${GITHUB_ENV}
+          DEBIAN_VERSION_CODENAME=$(sh -c '. /etc/os-release && echo "${VERSION_CODENAME}"')
+          echo "DEBIAN_VERSION_CODENAME=$DEBIAN_VERSION_CODENAME"
+          echo "DEBIAN_VERSION_CODENAME=$DEBIAN_VERSION_CODENAME" >> ${GITHUB_OUTPUT}
+          echo "DEBIAN_VERSION_CODENAME=$DEBIAN_VERSION_CODENAME" >> ${GITHUB_ENV}
       - name: Download binaries
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -332,7 +344,7 @@ jobs:
 
           cat > $PKG_ROOT/DEBIAN/control << EOF
           Package: containerd
-          Version: ${{ env.VERSION }}-${{ env.RELEASE }}~${{ env.DIST }}
+          Version: ${{ env.VERSION }}-${{ env.RELEASE }}~${{ env.ID_VERSION_ID }}~${{ env.DEBIAN_VERSION_CODENAME }}
           Architecture: ${{ env.ARCH }}
           Maintainer: 徐晓伟 <xuxiaowei@xuxiaowei.com.cn>
           Description: containerd (loong64)
@@ -346,10 +358,18 @@ jobs:
           dpkg-deb --build $PKG_ROOT debs/
 
           find debs -name '*.deb'
+          # Rename: replace ~ with . in filename (GitHub releases / URLs don't like ~)
+          for f in debs/*.deb; do
+            new_name=$(echo "$f" | tr '~' '.')
+            if [ "$f" != "$new_name" ]; then
+              mv "$f" "$new_name"
+              echo "Renamed: $f -> $new_name"
+            fi
+          done
       - name: List DEB files
         id: deb-file
         run: |
-          DEBIAN_DEB_NAME=containerd_${{ env.VERSION }}-${{ env.RELEASE }}~${{ env.DIST }}_${{ env.ARCH }}.deb
+          DEBIAN_DEB_NAME=containerd_${{ env.VERSION }}-${{ env.RELEASE }}.${{ env.ID_VERSION_ID }}.${{ env.DEBIAN_VERSION_CODENAME }}_${{ env.ARCH }}.deb
           echo "DEBIAN_DEB_NAME=$DEBIAN_DEB_NAME"
           echo "DEBIAN_DEB_NAME=$DEBIAN_DEB_NAME" >> $GITHUB_OUTPUT
           echo "DEBIAN_DEB_NAME=$DEBIAN_DEB_NAME" >> $GITHUB_ENV
@@ -383,7 +403,7 @@ jobs:
 
   release:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [ rpm-anolis, deb-debian ]
+    needs: [ build, rpm-anolis, deb-debian ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -494,14 +514,17 @@ jobs:
 
   trigger-gitlab:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [ rpm-anolis, deb-debian, release ]
+    needs: [ build, rpm-anolis, deb-debian, release ]
     runs-on: ubuntu-latest
     permissions:
       contents: read
     env:
+      IS_STABLE: ${{ needs.build.outputs.IS_STABLE }}
       BASE_URL: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}
       ANOLIS_RPM_NAME: ${{ needs.rpm-anolis.outputs.ANOLIS_RPM_NAME }}
+      ANOLIS_VERSION: ${{ needs.rpm-anolis.outputs.ANOLIS_VERSION }}
       DEBIAN_DEB_NAME: ${{ needs.deb-debian.outputs.DEBIAN_DEB_NAME }}
+      DEBIAN_VERSION_CODENAME: ${{ needs.deb-debian.outputs.DEBIAN_VERSION_CODENAME }}
       GITLAB_API_URL: ${{ vars.GITLAB_API_URL || 'https://gitlab.xuxiaowei.com.cn' }}
       GITLAB_PROJECT_ID: ${{ vars.GITLAB_PROJECT_ID || '590' }}
       GITLAB_REF: ${{ vars.GITLAB_REF || 'sync' }}
@@ -515,6 +538,9 @@ jobs:
           --fail \
           -F token=${{ secrets.GITLAB_TRIGGER_TOKEN }} \
           -F ref=${{ env.GITLAB_REF }} \
+          -F "variables[ANOLIS_VERSION]=${{ env.ANOLIS_VERSION }}" \
+          -F "variables[DEBIAN_VERSION_CODENAME]=${{ env.DEBIAN_VERSION_CODENAME }}" \
+          -F "variables[IS_STABLE]=${{ env.IS_STABLE }}" \
           -F "variables[ANOLIS_RPM_URL]=${{ env.ANOLIS_RPM_URL }}" \
           -F "variables[DEBIAN_DEB_URL]=${{ env.DEBIAN_DEB_URL }}" \
           ${{ env.GITLAB_API_URL }}/api/v4/projects/${{ env.GITLAB_PROJECT_ID }}/trigger/pipeline
