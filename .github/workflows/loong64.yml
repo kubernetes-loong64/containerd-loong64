@@ -142,7 +142,7 @@ jobs:
   rpm-anolis:
     needs: build
     runs-on: ubuntu-latest
-    container: openanolis/anolisos:23
+    container: openanolis/anolisos:23.4
     outputs:
       ANOLIS_RPM_NAME: ${{ steps.rpm-file.outputs.ANOLIS_RPM_NAME }}
       ANOLIS_VERSION: ${{ steps.extract-version.outputs.ANOLIS_VERSION }}
