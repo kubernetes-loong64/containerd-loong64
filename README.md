@@ -14,12 +14,12 @@ A GitHub Actions workflow clones the specified containerd version, cross-compile
 
 ## Branch naming
 
-Push a branch named `loong64-<containerd-version>` (e.g. `loong64-v2.3.1`) to trigger a build. Append `+<build>`
-(e.g. `loong64-v2.3.1+0`) to include build metadata.
+Push a branch named `loong64-<containerd-version>` (e.g. `loong64-v2.3.2`) to trigger a build. Append `+<build>`
+(e.g. `loong64-v2.3.2+0`) to include build metadata.
 
 ## [Release](https://github.com/kubernetes-loong64/containerd-loong64/releases)
 
-Push a tag matching `release-loong64-<containerd-version>` (e.g. `release-loong64-v2.3.1+0`) to publish
+Push a tag matching `release-loong64-<containerd-version>` (e.g. `release-loong64-v2.3.2+0`) to publish
 a GitHub Release with the built binaries.
 
 The `+<build>` suffix provides build metadata (e.g. `+0`, `+1-alpha.1`).

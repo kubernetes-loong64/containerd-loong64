@@ -13,12 +13,12 @@ artifact。目标平台：`linux/loong64`。
 
 ## 分支命名
 
-推送 `loong64-<containerd 版本>` 格式的分支（如 `loong64-v2.3.1`）即可触发构建。可追加 `+<build>`
-（如 `loong64-v2.3.1+0`）携带构建元数据。
+推送 `loong64-<containerd 版本>` 格式的分支（如 `loong64-v2.3.2`）即可触发构建。可追加 `+<build>`
+（如 `loong64-v2.3.2+0`）携带构建元数据。
 
 ## [发布](https://github.com/kubernetes-loong64/containerd-loong64/releases)
 
-推送 `release-loong64-<containerd 版本>` 格式的标签（如 `release-loong64-v2.3.1+0`）即可自动创建 GitHub
+推送 `release-loong64-<containerd 版本>` 格式的标签（如 `release-loong64-v2.3.2+0`）即可自动创建 GitHub
 Release 并上传构建产物。
 
 `+<build>` 后缀提供构建元数据（如 `+0`、`+1-alpha.1`）。
